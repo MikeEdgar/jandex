@@ -18,6 +18,10 @@
 
 package org.jboss.jandex;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 /**
  * Represents an individual Java method parameter that was annotated.
  *
@@ -74,7 +78,64 @@ public final class MethodParameterInfo implements AnnotationTarget {
     public final String name() {
         return method.parameterName(parameter);
     }
-    
+
+    /**
+     * Returns the annotation instances declared on this method parameter.
+     *
+     * @return the annotation instances declared on this parameter, or an empty list if none
+     */
+    public final List<AnnotationInstance> annotations() {
+        List<AnnotationInstance> annotations = null;
+
+        for (AnnotationInstance annotation : method.methodInternal().annotationArray()) {
+            if (annotation.target().kind() != Kind.METHOD_PARAMETER) {
+                continue;
+            }
+
+            if (annotation.target().asMethodParameter().position() == this.parameter) {
+                if (annotations == null) {
+                    annotations = new ArrayList<AnnotationInstance>();
+                }
+
+                annotations.add(annotation);
+            }
+        }
+
+        return annotations != null ? annotations : Collections.<AnnotationInstance>emptyList();
+    }
+
+    /**
+     * Retrieves an annotation instance declared on this parameter. If an annotation by that name
+     * is not present, null will be returned.
+     *
+     * @param name the name of the annotation to locate on the parameter
+     * @return the annotation if found, otherwise, null
+     */
+    public final AnnotationInstance annotation(DotName name) {
+        for (AnnotationInstance annotation : method.methodInternal().annotationArray()) {
+            if (annotation.target().kind() == Kind.METHOD_PARAMETER &&
+                annotation.target().asMethodParameter().position() == this.parameter &&
+                annotation.name().equals(name)) {
+                return annotation;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Returns whether or not the annotation instance with the given name occurs on
+     * this parameter.
+     *
+     * @see #annotations()
+     * @see #annotation(DotName)
+     * @param name the name of the annotation to look for
+     * @return true if the annotation is present, false otherwise
+     */
+    public final boolean hasAnnotation(DotName name) {
+        return annotation(name) != null;
+    }
+
     /**
      * Returns a string representation describing this method parameter
      *
